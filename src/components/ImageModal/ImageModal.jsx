@@ -1,13 +1,29 @@
 import React from "react";
 import styles from "./ImageModal.module.css";
+import Modal from "react-modal";
 
-const ImageModal = ({ image, onClose }) => {
+Modal.setAppElement("#root");
+
+const ImageModal = ({ isOpen, onClose, image }) => {
+  if (!image) return null;
+
+  const { urls, alt_description, user } = image;
+
   return (
-    <div className={styles.modalOverlay} onClick={onClose}>
-      <div className={styles.modalContent}>
-        <img className={styles.image} src={image.url} alt={image.title} />
+    <Modal
+      isOpen={isOpen}
+      onRequestClose={onClose}
+      style={{
+        overlay: { backgroundColor: "rgba(0, 0, 0, 0.75)" },
+        content: { padding: 0, maxWidth: "800px", margin: "auto" },
+      }}
+    >
+      <div>
+        <img src={urls.regular} alt={alt_description} />
+        <p>By: {user.name}</p>
+        <button onClick={onClose}>Close</button>
       </div>
-    </div>
+    </Modal>
   );
 };
 

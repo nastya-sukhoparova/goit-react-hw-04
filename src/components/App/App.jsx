@@ -1,61 +1,65 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import axios from "axios";
 import SearchBar from "../SearchBar/SearchBar";
 import ImageGallery from "../ImageGallery/ImageGallery";
-import LoadMoreBtn from "../LoadMoreBtn/LoadMoreBtn";
+import ImageModal from "../ImageModal/ImageModal";
 import Loader from "../Loader/Loader";
-import ErrorMessage from "../ErrorMessage/ErrorMessage";
-import { fetchImages } from "../services/unsplashApi";
-import "./App.module.css";
 
-function App() {
+const API_KEY = "q7chwZViv-iX0gILUGv_6X6QID72zQvFLQPXxNeMTZA";
+const API_URL = "https://api.unsplash.com/search/photos";
+
+const App = () => {
   const [images, setImages] = useState([]);
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const [selectedImage, setSelectedImage] = useState(null);
 
-  const handleSearch = async (newQuery) => {
+  useEffect(() => {
+    if (!query) return;
+
+    const fetchImages = async () => {
+      setIsLoading(true);
+      try {
+        const response = await axios.get(API_URL, {
+          params: { query, page, per_page: 12 },
+          headers: { Authorization: `Client-ID ${API_KEY}` },
+        });
+        setImages((prevImages) => [...prevImages, ...response.data.results]);
+      } catch (error) {
+        console.error("Error fetching images:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchImages();
+  }, [query, page]);
+
+  const handleSearch = (newQuery) => {
     setQuery(newQuery);
-    setPage(1);
     setImages([]);
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const data = await fetchImages(newQuery, 1);
-      setImages(data);
-    } catch (err) {
-      setError("Failed to fetch images");
-    } finally {
-      setIsLoading(false);
-    }
+    setPage(1);
   };
 
-  const loadMore = async () => {
-    setIsLoading(true);
-    try {
-      const data = await fetchImages(query, page + 1);
-      setImages((prev) => [...prev, ...data]);
-      setPage((prev) => prev + 1);
-    } catch (err) {
-      setError("Failed to load more images");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const loadMore = () => setPage((prevPage) => prevPage + 1);
 
   return (
-    <div className="app">
-      <SearchBar onSearch={handleSearch} />
-      {error && <ErrorMessage message={error} />}
-      <ImageGallery images={images} />
-      {isLoading ? (
-        <Loader />
-      ) : (
-        images.length > 0 && <LoadMoreBtn onClick={loadMore} />
-      )}
+    <div>
+      <SearchBar onSubmit={handleSearch} />
+      <ImageGallery
+        images={images}
+        onImageClick={(image) => setSelectedImage(image)}
+      />
+      {isLoading && <Loader />}
+      {images.length > 0 && <button onClick={loadMore}>Load More</button>}
+      <ImageModal
+        isOpen={!!selectedImage}
+        image={selectedImage}
+        onClose={() => setSelectedImage(null)}
+      />
     </div>
   );
-}
+};
 
 export default App;
